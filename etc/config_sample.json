@@ -3,6 +3,7 @@
   "watch_directory": "/home/example/example_recordings",
   "systems": {
     "example": {
+      "archive_files": 0,
       "talkgroup_csv_path": "/home/example/rtl_config/example_county_channels.csv",
       "openmhz": {
         "enabled": 1,
