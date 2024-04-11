@@ -11,27 +11,32 @@ module_logger = logging.getLogger('rtl_watcher.audio_file_handler')
 
 
 def convert_mp3_m4a(mp3_file_path):
+    # Check if the MP3 file exists
     if not os.path.isfile(mp3_file_path):
         module_logger.error(f"MP3 file does not exist: {mp3_file_path}")
         return False
 
     module_logger.info(f'Converting MP3 to Mono M4A at 8k')
 
-    command = f"ffmpeg -y -i {mp3_file_path} -af aresample=resampler=soxr -ar 8000 -c:a aac -ac 1 -b:a 8k {mp3_file_path.replace('.mp3', '.m4a')}"
+    # Construct the ffmpeg command
+    m4a_file_path = mp3_file_path.replace('.mp3', '.m4a')
+    command = ["ffmpeg", "-y", "-i", mp3_file_path, "-af", "aresample=resampler=soxr", "-ar", "8000", "-c:a", "aac", "-ac", "1", "-b:a", "8k", m4a_file_path]
 
     try:
-        output = subprocess.check_output(command, shell=True, text=True, stderr=subprocess.STDOUT)
-        module_logger.debug(output)
+        # Execute the ffmpeg command
+        result = subprocess.run(command, capture_output=True, text=True, check=True)
+        module_logger.debug(f"ffmpeg output: {result.stdout}")
         module_logger.info(f"Successfully converted MP3 to M4A for file: {mp3_file_path}")
         return True
     except subprocess.CalledProcessError as e:
-        error_message = f"Failed to convert MP3 to M4A: {e.output}"
-        module_logger.critical(error_message)
+        error_message = f"Failed to convert MP3 to M4A for file {mp3_file_path}. Error: {e}"
+        module_logger.error(error_message)
+        return False
     except Exception as e:
-        error_message = f"An unexpected error occurred during conversion: {str(e)}"
-        module_logger.critical(error_message, exc_info=True)
+        error_message = f"An unexpected error occurred during conversion of {mp3_file_path}: {e}"
+        module_logger.error(error_message)
+        return False
 
-    return False
 
 
 def get_audio_file_info(mp3_file_path):
