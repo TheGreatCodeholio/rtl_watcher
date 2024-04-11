@@ -7,3 +7,4 @@ RUN pip install -r requirements.txt
 RUN apt update && apt install -y ffmpeg
 
 ENTRYPOINT []
+
