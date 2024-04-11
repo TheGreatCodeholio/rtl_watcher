@@ -11,6 +11,7 @@ def process_file(config_data, file_path):
 
     short_name, epoch_timestamp, frequency, duration_sec = get_audio_file_info(file_path)
     if any(value is None for value in [short_name, epoch_timestamp, frequency, duration_sec]):
+        module_logger.error("Unable to get short name, timestamp, frequency or duration.")
         return
 
     system_config = config_data.get("systems", {}).get(short_name, {})
@@ -21,17 +22,20 @@ def process_file(config_data, file_path):
 
     talkgroup_data = get_talkgroup_data(system_config.get("talkgroup_csv_path", ""), frequency)
     if not talkgroup_data:
+        module_logger.error("Talkgroup Data Empty")
         return
 
     convert_result = convert_mp3_m4a(file_path)
     if not convert_result:
+        module_logger.error("Convert M4A not complete")
         return
 
     call_data = create_json(short_name, epoch_timestamp, frequency, duration_sec, talkgroup_data)
     if not call_data:
+        module_logger.error("Call Data Empty")
         return
 
     if system_config.get("openmhz", {}).get("enabled", 0) == 1:
-        upload_to_openmhz(system_config.get("openmhz", {}), file_path.repalce(".mp3", ".m4a"), call_data)
+        upload_to_openmhz(system_config.get("openmhz", {}), file_path.replace(".mp3", ".m4a"), call_data)
 
     module_logger.info(f"Processing Complete for {file_path}")
