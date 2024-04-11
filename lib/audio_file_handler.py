@@ -20,7 +20,7 @@ def convert_mp3_m4a(mp3_file_path):
 
     # Construct the ffmpeg command
     m4a_file_path = mp3_file_path.replace('.mp3', '.m4a')
-    command = ["ffmpeg", "-y", "-i", mp3_file_path, "-af", "aresample=resampler=soxr", "-ar", "8000", "-c:a", "aac", "-ac", "1", "-b:a", "8k", m4a_file_path]
+    command = ["ffmpeg", "-y", "-i", mp3_file_path, "-af", "aresample=resampler=soxr", "-ar", "16000", "-c:a", "aac", "-ac", "1", "-b:a", "96k", m4a_file_path]
 
     try:
         # Execute the ffmpeg command
