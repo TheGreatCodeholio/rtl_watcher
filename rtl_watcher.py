@@ -1,4 +1,5 @@
 import os
+import threading
 import time
 import traceback
 
@@ -37,8 +38,17 @@ except Exception as e:
 
 
 def main():
-    w = Watcher(config_data)
-    w.run()
+    watcher_threads = []
+
+    for system in config_data.get("systems"):
+        watcher = Watcher(config_data["systems"][system])
+        logger.info(f"Starting Folder Watcher For: {system}")
+        t = threading.Thread(target=watcher.run)
+        t.start()
+        watcher_threads.append(t)
+
+    for t in watcher_threads:
+        t.join()
 
 
 if __name__ == "__main__":

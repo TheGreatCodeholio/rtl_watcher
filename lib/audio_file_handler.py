@@ -163,31 +163,6 @@ def create_json(short_name, epoch_timestamp, frequency, duration_sec, talkgroup_
     return call_data
 
 
-def remove_old_directories(start_path):
-    today = datetime.now()
-    current_path = start_path
-
-    try:
-        # Walk up the directory structure
-        while current_path.count(os.sep) >= 3:  # Ensure we're at least in a YYYY/MM/DD structured directory
-            # Attempt to parse the directory date
-            parts = current_path.split(os.sep)
-            dir_date_str = '/'.join(parts[-3:])  # Get the last 3 parts, assumed to be YYYY/MM/DD
-            dir_date = datetime.strptime(dir_date_str, '%Y/%m/%d')
-
-            if dir_date < today:
-                module_logger.debug(f"Removing old directory: {current_path}")
-                shutil.rmtree(current_path, ignore_errors=True)
-                # Move up a directory
-                current_path = os.sep.join(parts[:-1])
-            else:
-                break  # Stop if we reach or exceed today's date
-    except ValueError as e:
-        module_logger.error(f"Error parsing directory date: {e}")
-    except Exception as e:
-        module_logger.error(f"Unexpected error during cleanup: {e}")
-
-
 def audio_file_cleanup(mp3_file_path):
     # Remove the MP3 and M4A file if they exist
     for ext in ['.mp3', '.m4a']:
@@ -195,6 +170,3 @@ def audio_file_cleanup(mp3_file_path):
         if os.path.exists(file_path):
             module_logger.debug(f"Removing file {file_path}")
             os.remove(file_path)
-
-    # Clean up directories older than today starting from the file's directory
-    remove_old_directories(os.path.dirname(mp3_file_path))
