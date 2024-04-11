@@ -1,6 +1,7 @@
 import logging
 
-from lib.audio_file_handler import convert_mp3_m4a, create_json, get_audio_file_info, get_talkgroup_data
+from lib.audio_file_handler import convert_mp3_m4a, create_json, get_audio_file_info, get_talkgroup_data, \
+    audio_file_cleanup
 from lib.openmhz_handler import upload_to_openmhz
 
 module_logger = logging.getLogger('rtl_watcher.file_processing')
@@ -37,5 +38,8 @@ def process_file(config_data, file_path):
 
     if system_config.get("openmhz", {}).get("enabled", 0) == 1:
         upload_to_openmhz(system_config.get("openmhz", {}), file_path.replace(".mp3", ".m4a"), call_data)
+
+    if config_data.get("archive_files", 0) == 0:
+        audio_file_cleanup(file_path)
 
     module_logger.info(f"Processing Complete for {file_path}")
