@@ -49,13 +49,13 @@ def get_audio_file_info(mp3_file_path):
         short_name = parts[0]
 
         # Attempt to parse the date and time
-        date_time_str = parts[1] + parts[2][:6]
+        date_time_str = parts[1] + parts[2]
         date_time_format = "%Y%m%d%H%M%S"
         parsed_date_time = datetime.strptime(date_time_str, date_time_format)
         epoch_timestamp = int(parsed_date_time.timestamp())
 
         # Extract the frequency part correctly
-        frequency = parts[2].rsplit("_", 1)[-1].replace(".mp3", "")
+        frequency = parts[3].replace(".mp3", "")
 
         # Attempt to load the MP3 file and get its duration
         audio = MP3(mp3_file_path)
