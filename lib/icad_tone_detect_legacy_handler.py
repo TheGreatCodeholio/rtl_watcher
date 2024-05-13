@@ -1,7 +1,7 @@
 import requests
 import logging
 
-module_logger = logging.getLogger('icad_tr_uploader.icad_uploader')
+module_logger = logging.getLogger('rtl_watcher.icad_uploader')
 
 
 def upload_to_icad_legacy(icad_data, mp3_audio_path, call_data):

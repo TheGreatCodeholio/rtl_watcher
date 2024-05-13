@@ -6,7 +6,7 @@ import time
 
 import requests
 
-module_logger = logging.getLogger('icad_tr_uploader.broadcastify_calls')
+module_logger = logging.getLogger('rtl_watcher.broadcastify_calls')
 
 
 def send_request(method, url, **kwargs):
