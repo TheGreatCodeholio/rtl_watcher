@@ -12,9 +12,8 @@ module_logger = logging.getLogger('rtl_watcher.watcher')
 
 
 class FileEventHandler(FileSystemEventHandler):
-    def __init__(self, executor, system_config_data, temp_folder_path):
+    def __init__(self, executor, system_config_data):
         self.system_config_data = system_config_data
-        self.temp_folder_path = temp_folder_path
         self.executor = executor
 
     def on_moved(self, event):
@@ -76,21 +75,20 @@ class FileEventHandler(FileSystemEventHandler):
             if file_extension.lower() in [".mp3"]:
                 module_logger.debug(f"Starting new thread for file: {event_path}")
                 try:
-                    self.executor.submit(process_call, self.system_config_data, self.temp_folder_path, event_path)
+                    self.executor.submit(process_call, self.system_config_data, event_path)
                 except Exception as e:
                     module_logger.error(f"Error starting thread for file {event_path}: {e}")
 
 
 class Watcher:
-    def __init__(self, system_config_data, temp_folder_path):
+    def __init__(self, system_config_data):
         self.system_config_data = system_config_data
-        self.temp_folder_path = temp_folder_path
         self.directory_to_watch = self.system_config_data.get("watch_directory") or None
         self.observer = Observer()
         self.executor = ThreadPoolExecutor(max_workers=self.system_config_data.get("max_processing_threads", 5))
 
     def run(self):
-        event_handler = FileEventHandler(self.executor, self.system_config_data, self.temp_folder_path)
+        event_handler = FileEventHandler(self.executor, self.system_config_data)
         if self.directory_to_watch:
             self.observer.schedule(event_handler, self.directory_to_watch, recursive=True)
         else:

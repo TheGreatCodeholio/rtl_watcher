@@ -16,7 +16,7 @@ from lib.transcribe_handler import upload_to_transcribe
 module_logger = logging.getLogger('rtl_watcher.call_processing')
 
 
-def process_call(system_config, temp_folder_path, mp3_file_path):
+def process_call(system_config, mp3_file_path):
 
     module_logger.info(f"Processing File {mp3_file_path}")
 
@@ -169,7 +169,7 @@ def process_call(system_config, temp_folder_path, mp3_file_path):
             module_logger.warning(f"RDIO system is disabled: {rdio.get('rdio_url')}")
             continue
 
-    if system_config.get("keep_files", 0) == 0:
+    if not system_config.get("keep_files"):
         audio_file_cleanup(mp3_file_path)
 
     module_logger.info(f"Processing Complete for {mp3_file_path}")
