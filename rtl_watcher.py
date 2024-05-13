@@ -41,7 +41,7 @@ def main():
     watcher_threads = []
 
     for system in config_data.get("systems"):
-        watcher = Watcher(config_data["systems"][system])
+        watcher = Watcher(config_data["systems"][system], config_data.get("temp_file_path", "/dev/shm"))
         logger.info(f"Starting Folder Watcher For: {system}")
         t = threading.Thread(target=watcher.run)
         t.start()

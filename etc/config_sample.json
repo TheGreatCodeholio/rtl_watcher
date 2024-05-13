@@ -1,11 +1,91 @@
 {
   "log_level": 1,
+  "temp_file_path": "/dev/shm",
   "systems": {
-    "example": {
+    "example-system": {
+      "keep_local_files": false,
       "watch_directory": "/home/example/example_recordings",
-      "keep_files": 0,
       "max_processing_threads": 5,
       "talkgroup_csv_path": "/home/example/rtl_config/example_county_channels.csv",
+      "archive": {
+        "enabled": 0,
+        "archive_type": "scp",
+        "archive_path": "",
+        "archive_days": 0,
+        "archive_extensions": [".mp3", ".m4a", ".json"],
+        "google_cloud": {
+          "project_id": "",
+          "bucket_name": "",
+          "credentials_file": ""
+        },
+        "aws_s3": {
+          "access_key_id": "",
+          "secret_access_key": "",
+          "bucket_name": "",
+          "region": ""
+        },
+        "scp": {
+          "host": "",
+          "port": 22,
+          "user": "",
+          "password": "",
+          "private_key_path": "",
+          "base_url": "https://example.com/audio"
+        },
+        "local": {
+          "base_url": "https://example.com/audio"
+        }
+      },
+      "audio_compression": {
+        "enabled": 0,
+        "sample_rate": 16000,
+        "bitrate": 96
+      },
+      "icad_tone_detect_legacy": [
+        {
+          "enabled": 0,
+          "talkgroups": [100],
+          "icad_url": "https://detect.example.com/tone_detect",
+          "icad_api_key": ""
+        }
+      ],
+      "tone_detection": {
+        "enabled": 0,
+        "allowed_talkgroups": ["*"],
+        "matching_threshold": 2,
+        "time_resolution": 100,
+        "tone_a_min_length": 0.8,
+        "tone_b_min_length": 2.8,
+        "long_tone_min_length": 2.0,
+        "hi_low_interval": 0.2,
+        "hi_low_min_alternations": 3
+      },
+      "talkgroup_config": {
+        "*": {
+          "whisper": {
+            "language": "en",
+            "beam_size": 5,
+            "best_of": 5,
+            "initial_prompt": null,
+            "use_last_as_initial_prompt": false,
+            "word_timestamps": true,
+            "cut_tones": false,
+            "cut_pre_tone": 0.5,
+            "cut_post_tone": 0.5,
+            "amplify_audio": false,
+            "vad_filter": true,
+            "vad_parameters": {
+              "threshold": 0.3,
+              "min_speech_duration_ms": 250,
+              "max_speech_duration_s": 3600,
+              "min_silence_duration_ms": 400,
+              "window_size_samples": 1024,
+              "speech_pad_ms": 400
+            }
+          }
+        }
+      },
+
       "openmhz": {
         "enabled": 1,
         "short_name": "example",
