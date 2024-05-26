@@ -22,7 +22,10 @@ RUN apk update && apk add --no-cache \
     build-base \
     git \
     file \
-    tzdata
+    tzdata \
+    gfortran \
+    libgfortran \
+    ffmpeg
 
 # Set the timezone (example: America/New_York)
 ENV TZ=America/New_York
