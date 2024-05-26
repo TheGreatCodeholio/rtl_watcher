@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime
 
 from mutagen.mp3 import MP3
+import pytz
 
 from lib.config_handler import load_csv_channels
 
@@ -105,6 +106,8 @@ def clean_temp_files(mp3_file_path, m4a_file_path, json_file_path):
 
 
 def get_audio_file_info(mp3_file_path):
+    TIMEZONE = os.getenv('TIMEZONE', 'UTC')
+
     if not os.path.isfile(mp3_file_path):
         module_logger.error("MP3 File Doesn't Exist")
         return None, None, None, None
@@ -122,7 +125,9 @@ def get_audio_file_info(mp3_file_path):
         date_time_str = parts[1] + parts[2]
         date_time_format = "%Y%m%d%H%M%S"
         parsed_date_time = datetime.strptime(date_time_str, date_time_format)
-        epoch_timestamp = int(parsed_date_time.timestamp())
+        timestamp_tz = pytz.timezone(TIMEZONE)
+        localized_datetime = timestamp_tz.localize(parsed_date_time)
+        epoch_timestamp = int(localized_datetime.timestamp())
 
         # Extract the frequency part correctly
         frequency = parts[3].replace(".mp3", "")
