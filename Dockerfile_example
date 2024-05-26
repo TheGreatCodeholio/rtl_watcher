@@ -38,5 +38,6 @@ RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
 USER icad
 
-ENTRYPOINT []
+# Entry point to execute the script, use Python to run rtl_watcher.py
+ENTRYPOINT ["python", "/app/rtl_watcher.py"]
 

@@ -1,0 +1,5 @@
+Dockerfile
+log
+etc/config.json
+test*
+docker-compose.yaml
