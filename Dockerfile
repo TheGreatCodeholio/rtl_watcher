@@ -1,10 +1,39 @@
-FROM python:3.11
+# Use an official Python Alpine Image
+FROM python:3.12-alpine
+
+ARG USER_ID=9911
+ARG GROUP_ID=9911
+
+RUN addgroup -g ${GROUP_ID} icad && \
+    adduser -u ${USER_ID} -G icad -D icad
+
+LABEL maintainer="ian@icarey.net"
+
+# Set the working directory in the container
 WORKDIR /app
+
+# Copy the current directory contents into the container at /app
 COPY rtl_watcher.py /app
 COPY lib /app/lib
 COPY requirements.txt /app
-RUN pip install -r requirements.txt
-RUN apt update && apt install -y ffmpeg
+
+# Install GIT file, tzdata, ffmpeg
+RUN apk update && apk add --no-cache \
+    build-base \
+    git \
+    file \
+    tzdata
+
+# Set the timezone (example: America/New_York)
+ENV TZ=America/New_York
+
+#Upgrade pip
+RUN pip install --upgrade pip
+
+# Install any needed packages specified in requirements.txt
+RUN pip install --trusted-host pypi.python.org -r requirements.txt
+
+USER icad
 
 ENTRYPOINT []
 

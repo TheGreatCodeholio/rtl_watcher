@@ -6,6 +6,7 @@ from lib.audio_file_handler import create_json, get_audio_file_info, get_talkgro
     audio_file_cleanup, compress_audio, save_call_data
 from lib.broadcastify_calls_handler import upload_to_broadcastify_calls
 from lib.config_handler import get_talkgroup_config
+from lib.icad_alerting_handler import upload_to_icad_alert
 from lib.icad_player_handler import upload_to_icad_player
 from lib.icad_tone_detect_legacy_handler import upload_to_icad_legacy
 from lib.openmhz_handler import upload_to_openmhz
@@ -168,6 +169,17 @@ def process_call(system_config, mp3_file_path):
         else:
             module_logger.warning(f"RDIO system is disabled: {rdio.get('rdio_url')}")
             continue
+
+    # Upload to Alerting
+    if system_config.get("icad_alerting", {}).get("enabled", 0) == 1:
+        if talkgroup_decimal not in system_config.get("icad_alerting", {}).get("allowed_talkgroups",
+                                                                               []) and "*" not in system_config.get(
+            "icad_alerting", {}).get("allowed_talkgroups", []):
+            module_logger.warning(
+                f"iCAD Alerting Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup_decimal')}")
+        else:
+            upload_to_icad_alert(system_config.get("icad_alerting", {}), call_data)
+            module_logger.info(f"Upload to iCAD Alert Complete")
 
     if not system_config.get("keep_files"):
         audio_file_cleanup(mp3_file_path)
