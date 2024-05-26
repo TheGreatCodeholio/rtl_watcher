@@ -245,7 +245,7 @@ def compress_audio(compression_config, input_audio_file_path):
         f'Converting {file_extension} to M4A at {compression_config.get("sample_rate")}@{compression_config.get("bitrate", 96)}')
 
     # Construct the ffmpeg command
-    m4a_file_path = input_audio_file_path.replace('.wav', '.m4a')
+    m4a_file_path = input_audio_file_path.replace('.mp3', '.m4a')
     command = ["ffmpeg", "-y", "-i", input_audio_file_path, "-af", "aresample=resampler=soxr", "-ar",
                f"{compression_config.get('sample_rate', 16000)}", "-c:a", "aac",
                "-ac", "1", "-b:a", f"{compression_config.get('bitrate', 96)}k", m4a_file_path]
