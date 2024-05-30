@@ -16,7 +16,11 @@ def upload_to_openmhz(openmhz, m4a_file_path, call_data):
         short_name = openmhz.get('short_name')
 
         if not api_key or not short_name:
-            module_logger.error("Upload to <<OpenMHZ>> <<failed>> API Key or Short Name not provided in the <<OpenMHZ>> configuration.")
+            module_logger.error("Upload to OpenMHZ failed: API Key or Short Name not provided in the OpenMHZ configuration.")
+            return False
+
+        if not os.path.exists(m4a_file_path):
+            module_logger.error(f"Upload to OpenMHZ failed: File {m4a_file_path} does not exist.")
             return False
 
         source_list = []
@@ -48,14 +52,14 @@ def upload_to_openmhz(openmhz, m4a_file_path, call_data):
         )
 
         if response.status_code == 200:
-            module_logger.info('Upload to <<OpenMHZ>> <<successful>>.')
+            module_logger.info('Upload to OpenMHZ successful.')
             return True
         else:
-            module_logger.error(f'Upload to <<OpenMHZ>> <<failed>> with status code {response.status_code}: {response.text}')
+            module_logger.error(f'Upload to OpenMHZ failed with status code {response.status_code}: {response.text}')
             return False
     except requests.exceptions.RequestException as e:
-        module_logger.error(f"Upload to <<OpenMHZ>> <<failed> OpenMHZ failed: {e}")
+        module_logger.error(f"Upload to OpenMHZ failed: Request to OpenMHZ failed: {e}")
         return False
     except Exception as e:
-        module_logger.error(f"An unexpected <<error>> occurred while uploading to <<OpenMHZ>>: {e}")
+        module_logger.error(f"An unexpected error occurred while uploading to OpenMHZ: {e}")
         return False
