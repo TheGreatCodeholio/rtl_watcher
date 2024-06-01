@@ -25,8 +25,8 @@ def upload_to_transcribe(transcribe_config, mp3_file_path, call_data, talkgroup_
                  'audioFile': audio_file,
                  'jsonFile': json_bytes
              }
+             response = requests.post(url, files=data, data=config_data)
 
-        response = requests.post(url, files=data, data=config_data)
         response.raise_for_status()
         response_json = response.json()
         module_logger.info(f'<<iCAD>> <<Transcribe>> successfully transcribed audio: {url}')
