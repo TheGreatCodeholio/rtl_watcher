@@ -16,35 +16,42 @@ class ColoredFormatter(logging.Formatter):
         level_color = self.COLOR_CODES.get(record.levelno, '')
         time = datetime.datetime.fromtimestamp(record.created).strftime('%Y-%m-%d %H:%M:%S')
         reset = Style.RESET_ALL
+        thread_name = record.threadName
         if record.levelno == logging.DEBUG:
             level_icon = f'[{Style.BRIGHT}{Fore.CYAN}^{reset}]'
             level_name = 'DEBUG'
             highlight_color = f'{Style.BRIGHT}{Fore.CYAN}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         elif record.levelno == logging.INFO:
             level_icon = f'[{Style.BRIGHT}{Fore.GREEN}+{reset}]'
             level_name = 'INFO'
             highlight_color = f'{Style.BRIGHT}{Fore.GREEN}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         elif record.levelno == logging.WARNING:
             level_icon = f'[{Style.BRIGHT}{Fore.YELLOW}!{reset}]'
             level_name = 'WARNING'
             highlight_color = f'{Style.BRIGHT}{Fore.YELLOW}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         elif record.levelno == logging.ERROR:
             level_icon = f'[{Style.BRIGHT}{Fore.RED}#{reset}]'
             level_name = 'ERROR'
             highlight_color = f'{Style.BRIGHT}{Fore.RED}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         elif record.levelno == logging.CRITICAL:
             level_icon = f'[{Style.BRIGHT}{Fore.MAGENTA}*{reset}]'
             level_name = 'CRITICAL'
             highlight_color = f'{Style.BRIGHT}{Fore.MAGENTA}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         else:
-            level_icon = ''
-            level_name = ''
-            highlight_color = ''
+            level_icon = f'[{Fore.LIGHTYELLOW_EX}%{reset}]'
+            level_name = 'UNKNOWN'
+            highlight_color = f'{Fore.LIGHTYELLOW_EX}'
+            thread_data = f'{highlight_color}[ {reset}{Fore.YELLOW}{thread_name}{highlight_color} ]{reset}'
         message = super().format(record)
         for word in message.split():
             if word.startswith('<<') and word.endswith('>>'):
                 message = message.replace(word, f'{highlight_color}{word[2:-2]}{reset}')
-        return f'{time} {level_color}{level_name}:{reset} {level_icon} {message.replace(level_name + ": ", "")}'
+        return f'{time} {thread_data} {level_color}{level_name}:{reset} {level_icon} {message.replace(level_name + ": ", "")}'
 
 
 class CustomLogger:
@@ -74,7 +81,7 @@ class CustomLogger:
 
         formatter = ColoredFormatter('%(message)s')
         console_handler.setFormatter(formatter)
-        file_handler.setFormatter(logging.Formatter('%(asctime)s %(levelname)s: %(message)s'))
+        file_handler.setFormatter(logging.Formatter('%(asctime)s [%(threadName)s] %(levelname)s: %(message)s'))
 
         self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
