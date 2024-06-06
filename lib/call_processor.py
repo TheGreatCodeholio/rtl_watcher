@@ -1,5 +1,6 @@
 import logging
 import os
+import time
 
 from lib.archive_handler import archive_files
 from lib.audio_file_handler import create_json, get_audio_file_info, get_talkgroup_data, \
@@ -32,6 +33,13 @@ def process_call(system_config, mp3_file_path):
         module_logger.error(
             "<<Error>> while getting system short name, timestamp, frequency or duration from audio file name..")
         return
+
+    current_time = time.time()
+    module_logger.debug(f"Timestamp from file - {epoch_timestamp}")
+    module_logger.debug(f"Timestamp now - {current_time}")
+    module_logger.debug(f"File Duration - {duration_sec}")
+    module_logger.debug(f"Skew Created to Now - {current_time - epoch_timestamp}")
+    module_logger.debug(f"Skew Created Minus Duration - {current_time - epoch_timestamp + duration_sec}")
 
     # Validate System Configuration
     module_logger.debug(system_config)
