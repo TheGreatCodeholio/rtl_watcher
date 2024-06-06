@@ -41,42 +41,45 @@ def upload_to_broadcastify_calls(broadcastify_config, m4a_file_path, call_data):
         json_bytes = json_string.encode('utf-8')
 
         with open(m4a_file_path, 'rb') as audio_file:
-            files = {
-                'metadata': (os.path.basename(m4a_file_path.replace("m4a", ".json")), json_bytes, 'application/json'),
-                'audio': (os.path.basename(m4a_file_path), audio_file, 'audio/aac'),
-                'callDuration': (None, str(call_data["call_length"])),
-                'systemId': (None, str(broadcastify_config["system_id"])),
-                'apiKey': (None, broadcastify_config["api_key"]),
-                'ts': (None, str(call_data["start_time"])),
-                'tg': (None, str(call_data["talkgroup"]))
-            }
+            audio_bytes = audio_file.read()
 
-            response = requests.post(broadcastify_url, headers=headers, files=files)
-            if response.status_code != 200:
-                module_logger.error(
-                    f"Failed to upload to Broadcastify Calls: Status {response.status_code}, Response: {response.text}")
+        files = {
+            'metadata': (os.path.basename(m4a_file_path.replace("m4a", ".json")), json_bytes, 'application/json'),
+            'filename': (None, os.path.basename(m4a_file_path)),
+            'callDuration': (None, str(call_data["call_length"])),
+            'systemId': (None, str(broadcastify_config["system_id"])),
+            'apiKey': (None, broadcastify_config["api_key"])
+        }
+        request_headers = headers.copy()
+        request_headers["Expect"] = ""
+        response = requests.post(broadcastify_url, headers=request_headers, files=files)
+        if response.status_code != 200:
+            module_logger.error(
+                f"Failed to upload to Broadcastify Calls: Status {response.status_code}, Response: {response.text}")
+            return False
+
+        try:
+            upload_url = response.text.split(" ")[1]
+            if not upload_url:
+                module_logger.error("Upload URL not found in the Broadcastify response.")
                 return False
+        except ValueError:
+            module_logger.error("Failed to parse response from Broadcastify as JSON.")
+            return False
 
-            try:
-                upload_url = response.text.split(" ")[1]
-                if not upload_url:
-                    module_logger.error("Upload URL not found in the Broadcastify response.")
-                    return False
-            except ValueError:
-                module_logger.error("Failed to parse response from Broadcastify as JSON.")
-                return False
+        upload_header = headers.copy()
+        upload_header["Expect"] = ""
+        upload_header["Transfer-Encoding"] = ""
+        upload_header["Content-Type"] = "audio/aac"
+        # Reuse the send_request function for the PUT request
+        upload_response = requests.put(upload_url,  headers=upload_header, data=audio_bytes)
 
-            audio_file.seek(0)
-            audio_data = audio_file.read()
+        if upload_response.status_code != 200:
+            module_logger.error(f"Failed to post call to Broadcastify Calls AWS Failed: {upload_response.status_code}, Response: {response.text}")
+            return False
 
-            # Reuse the send_request function for the PUT request
-            upload_response = requests.put(upload_url,  headers={'Content-Type': 'audio/aac'}, data=audio_data)
-            if upload_response.status_code != 200:
-                module_logger.error(f"Failed to post call to Broadcastify Calls AWS Failed: {upload_response.status_code}, Response: {response.text}")
-                return False
-
-            module_logger.info("Broadcastify Calls Audio Upload Complete")
-            return True
+        module_logger.info("Broadcastify Calls Audio Upload Complete")
+        return True
     except IOError as e:
         module_logger.error(f"File error: {e}")
         return False
