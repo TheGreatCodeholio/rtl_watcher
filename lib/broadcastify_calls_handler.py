@@ -14,7 +14,13 @@ def send_request(method, url, request_type_description, **kwargs):
     """
     module_logger.debug(f"Broadcastify Calls - Sending {method} request to {url} ({request_type_description}) with kwargs: {kwargs}")
     try:
-        response = requests.request(method, url, **kwargs)
+        if method == "POST":
+            response = requests.post(method, url, **kwargs)
+        elif method == "PUT":
+            response = requests.put(url, **kwargs)
+        else:
+            response = requests.get(url, **kwargs)
+
         if response.status_code != 200:
             module_logger.error(
                 f"Broadcastify Calls - Error in {method} request to {url} ({request_type_description}): "
