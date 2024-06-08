@@ -18,7 +18,15 @@ from lib.transcribe_handler import upload_to_transcribe
 module_logger = logging.getLogger('rtl_watcher.call_processing')
 
 
+def log_time(action_name, start_time):
+    end_time = time.time()
+    elapsed_time = end_time - start_time
+    module_logger.debug(f"{action_name} took {elapsed_time:.2f} seconds")
+    return end_time
+
+
 def process_call(system_config, mp3_file_path):
+    start_time = time.time()
     module_logger.info(f"Processing File {mp3_file_path}")
 
     # create path variables for new files
@@ -27,19 +35,14 @@ def process_call(system_config, mp3_file_path):
 
     m4a_exists = False
 
+    action_start = time.time()
+
     # Get System/Channel/Call Data from MP3 Filename
     system_short_name, epoch_timestamp, frequency, duration_sec = get_audio_file_info(mp3_file_path)
     if any(value is None for value in [system_short_name, epoch_timestamp, frequency, duration_sec]):
         module_logger.error(
             "<<Error>> while getting system short name, timestamp, frequency or duration from audio file name..")
         return
-
-    current_time = time.time()
-    module_logger.debug(f"Timestamp from file - {epoch_timestamp}")
-    module_logger.debug(f"Timestamp now - {current_time}")
-    module_logger.debug(f"File Duration - {duration_sec}")
-    module_logger.debug(f"Skew Created to Now - {current_time - epoch_timestamp}")
-    module_logger.debug(f"Skew Created Minus Duration - {current_time - epoch_timestamp + duration_sec}")
 
     # Validate System Configuration
     module_logger.debug(system_config)
@@ -67,15 +70,20 @@ def process_call(system_config, mp3_file_path):
         module_logger.error("<<Talkgroup>> <<configuration>> not in config data. Cannot Process")
         return
 
+    action_start = log_time("Initial audio processing.", action_start)
+
     # Convert audio to M4A
     if system_config.get("audio_compression", {}).get("enabled", 0) == 1:
         m4a_exists = compress_audio(system_config.get("audio_compression", {}), mp3_file_path)
+        action_start = log_time("MP3 to M4A Convert", action_start)
+
 
     # Legacy Tone Detection
     for icad_detect in system_config.get("icad_tone_detect_legacy", []):
         if icad_detect.get("enabled", 0) == 1:
             try:
                 icad_result = upload_to_icad_legacy(icad_detect, mp3_file_path, call_data)
+                action_start = log_time("iCAD Legacy Upload", action_start)
                 if icad_result:
                     module_logger.info(
                         f"<<Successfully>> uploaded to <<iCAD>> <<Tone>> <<Detect>> Legacy server: {icad_detect.get('icad_url')}")
@@ -84,7 +92,8 @@ def process_call(system_config, mp3_file_path):
 
             except Exception as e:
                 module_logger.error(
-                    f"<<Failed>> to upload to <<iCAD>> <<Tone>> <<Detect>> Legacy server: {icad_detect.get('icad_url')}. Error: {str(e)}", exc_info=True)
+                    f"<<Failed>> to upload to <<iCAD>> <<Tone>> <<Detect>> Legacy server: {icad_detect.get('icad_url')}. Error: {str(e)}",
+                    exc_info=True)
                 continue
         else:
             module_logger.warning(f"<<iCAD>> <<Tone>> <<Detect>> Legacy is disabled: {icad_detect.get('icad_url')}")
@@ -92,20 +101,30 @@ def process_call(system_config, mp3_file_path):
 
     # Tone Detection
     if system_config.get("tone_detection", {}).get("enabled", 0) == 1:
-        if talkgroup_decimal not in system_config.get("tone_detection", {}).get("allowed_talkgroups", []) and "*" not in system_config.get("tone_detection", {}).get("allowed_talkgroups", []):
-            module_logger.debug(f"<<Tone>> <<Detection>> Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup')}")
+        if talkgroup_decimal not in system_config.get("tone_detection", {}).get("allowed_talkgroups",
+                                                                                []) and "*" not in system_config.get(
+                "tone_detection", {}).get("allowed_talkgroups", []):
+            module_logger.debug(
+                f"<<Tone>> <<Detection>> Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup')}")
         else:
             tone_detect_result = get_tones(system_config.get("tone_detection", {}), mp3_file_path)
+            action_start = log_time("Tone Detection", action_start)
             call_data["tones"] = tone_detect_result
             module_logger.info(f"<<Tone>> <<Detection>> Complete")
             module_logger.debug(call_data.get("tones"))
 
     # Transcribe Audio
     if system_config.get("transcribe", {}).get("enabled", 0) == 1:
-        if talkgroup_decimal not in system_config.get("transcribe", {}).get("allowed_talkgroups", []) and "*" not in system_config.get("transcribe", {}).get("allowed_talkgroups", []):
-            module_logger.debug(f"<<iCAD>> <<Transcribe>> <<Disabled>> for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup')}")
+        if talkgroup_decimal not in system_config.get("transcribe", {}).get("allowed_talkgroups",
+                                                                            []) and "*" not in system_config.get(
+                "transcribe", {}).get("allowed_talkgroups", []):
+            module_logger.debug(
+                f"<<iCAD>> <<Transcribe>> <<Disabled>> for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup')}")
         else:
-            transcribe_result = upload_to_transcribe(system_config.get("transcribe", {}), mp3_file_path, call_data, talkgroup_config=None)
+            transcribe_result = upload_to_transcribe(system_config.get("transcribe", {}), mp3_file_path, call_data,
+                                                     talkgroup_config=None)
+            action_start = log_time("Transcribe", action_start)
+
             call_data["transcript"] = transcribe_result
             module_logger.debug(call_data.get("transcript"))
 
@@ -113,10 +132,12 @@ def process_call(system_config, mp3_file_path):
     try:
         save_call_data(json_file_path, call_data)
     except Exception as e:
-        module_logger.warning(f"<<Unexpected>> <<error>> occurred saving new call data to <<temporary>> <<file>> {json_file_path}. {e}")
+        module_logger.warning(
+            f"<<Unexpected>> <<error>> occurred saving new call data to <<temporary>> <<file>> {json_file_path}. {e}")
 
     # Archive Files
-    if system_config.get("archive", {}).get("enabled", 0) == 1 and system_config.get("archive", {}).get("archive_days", 0) >= 1:
+    if system_config.get("archive", {}).get("enabled", 0) == 1 and system_config.get("archive", {}).get("archive_days",
+                                                                                                        0) >= 1:
         mp3_url, m4a_url, json_url = archive_files(system_config.get("archive", {}),
                                                    os.path.dirname(mp3_file_path), os.path.basename(mp3_file_path),
                                                    call_data,
@@ -125,6 +146,8 @@ def process_call(system_config, mp3_file_path):
             call_data["audio_mp3_url"] = mp3_url
         if m4a_url:
             call_data["audio_m4a_url"] = m4a_url
+
+        action_start = log_time("Archive Files", action_start)
 
         if mp3_url is None and m4a_url is None and json_url is None:
             module_logger.error("No Files Uploaded to Archive")
@@ -139,24 +162,41 @@ def process_call(system_config, mp3_file_path):
         if m4a_exists:
             openmhz_result = upload_to_openmhz(system_config.get("openmhz", {}),
                                                m4a_file_path, call_data)
+
+            action_start = log_time("OpenMHZ Upload", action_start)
+
         else:
             module_logger.warning(f"No M4A file can't send to OpenMHZ")
 
     # Upload to BCFY Calls
     if system_config.get("broadcastify_calls", {}).get("enabled", 0) == 1:
         if m4a_exists:
+            current_time = time.time()
+            module_logger.debug(f"Timestamp from file - {epoch_timestamp}")
+            module_logger.debug(f"Timestamp now - {current_time}")
+            module_logger.debug(f"File Duration - {duration_sec}")
+            module_logger.debug(f"Skew Created to Now - {current_time - epoch_timestamp}")
+            module_logger.debug(f"Skew Created Minus Duration - {current_time - epoch_timestamp + duration_sec}")
+
             bcfy_calls_result = upload_to_broadcastify_calls(system_config.get("broadcastify_calls", {}), m4a_file_path,
                                                              call_data)
+
+            action_start = log_time("Broadcastify Calls", action_start)
+
         else:
             module_logger.warning(f"No M4A file can't send to Broadcastify Calls")
 
     # Upload to iCAD Player
     if call_data.get("audio_m4a_url", "") and system_config.get("icad_player", {}).get("enabled", 0) == 1:
 
-        if talkgroup_decimal not in system_config.get("icad_player", {}).get("allowed_talkgroups", []) and "*" not in system_config.get("icad_player", {}).get("allowed_talkgroups", []):
-            module_logger.warning(f"iCAD Player Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup_decimal')}")
+        if talkgroup_decimal not in system_config.get("icad_player", {}).get("allowed_talkgroups",
+                                                                             []) and "*" not in system_config.get(
+                "icad_player", {}).get("allowed_talkgroups", []):
+            module_logger.warning(
+                f"iCAD Player Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup_decimal')}")
         else:
             icad_player_result = upload_to_icad_player(system_config.get("icad_player", {}), call_data)
+            action_start = log_time("iCAD Player", action_start)
             if icad_player_result:
                 module_logger.info(f"Upload to iCAD Player Complete")
 
@@ -168,6 +208,7 @@ def process_call(system_config, mp3_file_path):
                 continue
             try:
                 upload_to_rdio(rdio, m4a_file_path, call_data)
+                action_start = log_time(f"RDIO Upload {rdio.get('rdio_url')}", action_start)
             except Exception as e:
                 continue
         else:
@@ -176,13 +217,18 @@ def process_call(system_config, mp3_file_path):
 
     # Upload to Alerting
     if system_config.get("icad_alerting", {}).get("enabled", 0) == 1:
-        if talkgroup_decimal not in system_config.get("icad_alerting", {}).get("allowed_talkgroups", []) and "*" not in system_config.get("icad_alerting", {}).get("allowed_talkgroups", []):
-            module_logger.warning(f"iCAD Alerting Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup_decimal')}")
+        if talkgroup_decimal not in system_config.get("icad_alerting", {}).get("allowed_talkgroups",
+                                                                               []) and "*" not in system_config.get(
+                "icad_alerting", {}).get("allowed_talkgroups", []):
+            module_logger.warning(
+                f"iCAD Alerting Disabled for Talkgroup {call_data.get('talkgroup_tag') or call_data.get('talkgroup_decimal')}")
         else:
             upload_to_icad_alert(system_config.get("icad_alerting", {}), call_data)
+            action_start = log_time("iCAD Alerting", action_start)
             module_logger.info(f"Upload to iCAD Alert Complete")
 
     if not system_config.get("keep_files"):
         audio_file_cleanup(mp3_file_path)
 
-    module_logger.info(f"Processing Complete for {mp3_file_path}")
+    total_time = time.time() - start_time
+    module_logger.info(f"Processing Complete for {mp3_file_path} - Total time: {total_time:.2f} seconds.")
