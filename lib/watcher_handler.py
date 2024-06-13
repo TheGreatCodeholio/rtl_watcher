@@ -101,14 +101,14 @@ class Watcher:
         self.system_config_data = system_config_data
         self.directory_to_watch = self.system_config_data.get("watch_directory") or None
         self.observer = Observer()
-        self.executor = ThreadPoolExecutor(max_workers=self.system_config_data.get("max_processing_threads", 5))
+        self.executor = ThreadPoolExecutor(max_workers=self.system_config_data.get("max_processing_threads", 10))
 
     def run(self):
 
         event_handler = FileEventHandler(self.executor, self.system_config_data)
         if self.directory_to_watch:
             module_logger.info(
-                f"Watching directory {self.directory_to_watch} with {self.system_config_data.get("max_processing_threads", 5)} processing threads.")
+                f"Watching directory {self.directory_to_watch} with {self.system_config_data.get("max_processing_threads", 10)} processing threads.")
             self.observer.schedule(event_handler, self.directory_to_watch, recursive=True)
         else:
             module_logger.error("Watch Directory not set.")
